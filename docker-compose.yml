@@ -1,0 +1,28 @@
+version: '3.2'
+
+services:
+  # Express App
+  app:
+    build: .
+    volumes:
+      - ./:/express-app
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+    environment:
+      - DB_NAME=master
+      - DB_USER=root
+      - DB_PASS=dev-password
+
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=dev-password
+    volumes:
+      - express-db-data:/var/lib/mysql
+
+volumes:
+  express-db-data:
