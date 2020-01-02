@@ -57,11 +57,13 @@ exports.postCart = async (req, res, next) => {
   const prodId = req.body.productId;
   const { user } = req;
   try {
-    // const product = await Product.findByPk(prodID);
     const cart = await user.getCart();
     const matches = await cart.getProducts({ where: { id: prodId }});
+
     if (matches.length > 0) {
-      console.log('match');
+      let { quantity } = matches[0].cartItem;
+      quantity += 1;
+      await cart.addProduct(matches[0], { through: { quantity }});
     } else {
       const product = await Product.findByPk(prodId);
       await cart.addProduct(product, { through: { quantity: 1 } });
@@ -70,19 +72,19 @@ exports.postCart = async (req, res, next) => {
   } catch(e) {
     console.log(e);
   }
-
-  Product.findById(prodId, product => {
-    Cart.addProduct(prodId, product.price);
-  });
-  res.redirect('/cart');
 };
 
-exports.postCartDeleteProduct = (req, res, next) => {
+exports.postCartDeleteProduct = async (req, res, next) => {
   const prodId = req.body.productId;
-  Product.findById(prodId, product => {
-    Cart.deleteProduct(prodId, product.price);
+  try {
+    const { user } = req;
+    const cart = await user.getCart();
+
+    const product = await cart.getProducts({ where: { id: prodId } });
+    await product[0].cartItem.destroy();
     res.redirect('/cart');
-  });
+
+  } catch(e) { console.log(e); }
 };
 
 exports.getOrders = (req, res, next) => {
