@@ -1,3 +1,4 @@
 .vscode
+.git
 .gitignore
 node-modules
