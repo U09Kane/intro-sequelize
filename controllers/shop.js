@@ -1,5 +1,5 @@
 const Product = require('../models/product');
-const Cart = require('../models/cart');
+
 
 exports.getProducts = (req, res, next) => {
   Product.findAll()
@@ -87,16 +87,33 @@ exports.postCartDeleteProduct = async (req, res, next) => {
   } catch(e) { console.log(e); }
 };
 
-exports.getOrders = (req, res, next) => {
-  res.render('shop/orders', {
-    path: '/orders',
-    pageTitle: 'Your Orders'
-  });
+exports.postOrder = async (req, res) => {
+  // Copy the <Cart> into a new <Order>
+  try {
+    const { user } = req;
+    const cart = await user.getCart();
+    const products = await cart.getProducts();
+    const order = await user.createOrder();
+    const orderedProducts = products.map((product) => {
+      const { quantity } = product.cartItem;
+      product.orderItem = { quantity };
+      return product;
+    });
+    // add products to order and clear the cart
+    await order.addProducts(orderedProducts);
+    await cart.setProducts(null);
+    res.redirect('/orders');
+
+  } catch (err) { console.log(err); }
 };
 
-exports.getCheckout = (req, res, next) => {
-  res.render('shop/checkout', {
-    path: '/checkout',
-    pageTitle: 'Checkout'
-  });
+exports.getOrders = async (req, res) => {
+  const { user } = req;
+  const orders = await user.getOrders({ include: ['products'] });
+
+  res.render('shop/orders', {
+    path: '/orders',
+    pageTitle: 'Your Orders',
+    orders,
+  })
 };
